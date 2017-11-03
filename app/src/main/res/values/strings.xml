@@ -2,7 +2,8 @@
     <string name="app_name">猜數字  v1.0</string>
     <string name="buttonPlay">開  始</string>
     <string name="textViewTitle">猜 數 字</string>
-    <string name="textViewID">ID :</string>
+    <string name="textViewLabel">給對手猜的數字 :</string>
     <string name="imageViewPlayer1">Player1</string>
     <string name="imageViewPlayer2">Player2</string>
+    <string name="textViewIDhint">請輸入四位數</string>
 </resources>
