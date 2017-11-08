@@ -21,16 +21,19 @@ public class PlayingActivity extends AppCompatActivity {
     private Button button0, button1, button2, button3, button4,
             button5, button6, button7, button8, button9;
     private TextView textViewPlayer1, textViewPlayer2;
-    private String guessNumberPlayer1 = "";
-    private int flag0 = 0, flag1 = 0, flag2 = 0, flag3 = 0, flag4 = 0, flag5 = 0, flag6 = 0, flag7 = 0, flag8 = 0, flag9 = 0;
+    private String guessNumberPlayer1 = "";             // 按扭按出來的數字
+    private String numberPlayer1;                       // 使用者設定的數字
+    private String numberPlayer2;                       // 對手設定的數字
+    private int flag0 = 0, flag1 = 0, flag2 = 0, flag3 = 0, flag4 = 0,
+            flag5 = 0, flag6 = 0, flag7 = 0, flag8 = 0, flag9 = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playing);
 
+        // 廣告
         MobileAds.initialize(this, "ca-app-pub-4286420050191609~2435862473");
-
         mAdView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
@@ -50,19 +53,26 @@ public class PlayingActivity extends AppCompatActivity {
 
         textViewPlayer1 = (TextView) findViewById(R.id.textViewPlayer1);
         textViewPlayer2 = (TextView) findViewById(R.id.textViewPlayer2);
+
+        Intent intent = getIntent();
+        numberPlayer1 = intent.getStringExtra("guessNumberPlayer1");
+
+        numberPlayer2 = "8573";
     }
 
+    // 按下小鍵盤
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.buttonOK:
-                if(guessNumberPlayer1.length() == 4) {
-
-                }else{
+                if (guessNumberPlayer1.length() == 4) {
+                    guessNumberPlayer1 += handleXAXB(Integer.parseInt(numberPlayer2), Integer.parseInt(guessNumberPlayer1));
+                } else {
                     Toast.makeText(PlayingActivity.this, "請輸入四位數字", Toast.LENGTH_SHORT).show();
                 }
+
                 break;
             case R.id.buttonX:
-                if(guessNumberPlayer1.length() != 0) {
+                if (guessNumberPlayer1.length() != 0) {
                     handleDelete(Integer.parseInt(guessNumberPlayer1.substring(guessNumberPlayer1.length() - 1)));
                 }
                 break;
@@ -104,6 +114,9 @@ public class PlayingActivity extends AppCompatActivity {
 
     }
 
+    // 按下數字鍵
+    // 按第一次顯示數字、文字變灰色
+    // 按第二次刪除數字、文字顏色復原
     private int handleTextViewID(int flag, String number, Button button) {
         if ((++flag % 2 == 1) ? true : false) {
             if (guessNumberPlayer1.length() < 4) {
@@ -120,6 +133,8 @@ public class PlayingActivity extends AppCompatActivity {
         return flag;
     }
 
+    // 按下刪除鍵X
+    // 刪除數字、文字顏色復原
     private void handleDelete(int lastNumber) {
         switch (lastNumber) {
             case 0:
@@ -156,4 +171,19 @@ public class PlayingActivity extends AppCompatActivity {
                 break;
         }
     }
+
+    // 處理 ?A?B
+    private String handleXAXB(int answer, int guess) {
+        String xAxB = "";
+        int a = 0, b = 0;
+
+        for(int i =1;i<=4;i++){
+            if((answer/Math.pow(10,i))%10 ==(guess/Math.pow(10,i))%10 ){
+                a++;
+            }
+        }
+
+        return xAxB;
+    }
+
 }

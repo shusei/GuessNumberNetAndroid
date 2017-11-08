@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         textViewID = (TextView) findViewById(R.id.textViewID);
     }
 
-
+    // 按下小鍵盤
     public void onClick(View v) {
 
         switch (v.getId()) {
@@ -99,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    // 按下數字鍵
+    // 按第一次顯示數字、文字變灰色
+    // 按第二次刪除數字、文字顏色復原
     private int handleTextViewID(int flag, String number, Button button) {
         if ((++flag % 2 == 1) ? true : false) {
             if (guessNumberPlayer1.length() < 4) {
@@ -115,6 +118,8 @@ public class MainActivity extends AppCompatActivity {
         return flag;
     }
 
+    // 按下刪除鍵X
+    // 刪除數字、文字顏色復原
     private void handleDelete(int lastNumber) {
         switch (lastNumber) {
             case 0:
