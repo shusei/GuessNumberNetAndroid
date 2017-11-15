@@ -30,6 +30,7 @@ public class PlayingActivity extends AppCompatActivity {
     //        flag[5] = 0, flag[6] = 0, flag[7] = 0, flag[8] = 0, flag[9] = 0;
     private int[] flag = new int[10];
     private Button[] button = new Button[10];
+    private String id;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +65,7 @@ public class PlayingActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         numberPlayer1 = intent.getStringExtra("guessNumberPlayer1");
+        id = intent.getStringExtra("uuid");
 
         numberPlayer2 = "8573";
     }

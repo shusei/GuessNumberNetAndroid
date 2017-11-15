@@ -13,6 +13,8 @@ import android.widget.Toast;
 
 import com.google.android.gms.ads.MobileAds;
 
+import java.util.UUID;
+
 public class MainActivity extends AppCompatActivity {
 
     private TextView textViewID;
@@ -21,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
             button5, button6, button7, button8, button9;
     private String guessNumberPlayer1 = "";
     private int flag0 = 0, flag1 = 0, flag2 = 0, flag3 = 0, flag4 = 0, flag5 = 0, flag6 = 0, flag7 = 0, flag8 = 0, flag9 = 0;
+    private String id = UUID.randomUUID().toString();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
                 if(guessNumberPlayer1.length() == 4) {
                     Intent intent = new Intent(MainActivity.this, PlayingActivity.class);
                     intent.putExtra("guessNumberPlayer1", guessNumberPlayer1);
+                    intent.putExtra("uuid", id);
                     startActivity(intent);
                 }else{
                     Toast.makeText(MainActivity.this, "請輸入四位數字", Toast.LENGTH_SHORT).show();
