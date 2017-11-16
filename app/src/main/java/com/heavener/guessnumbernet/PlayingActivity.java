@@ -13,6 +13,11 @@ import android.widget.Toast;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class PlayingActivity extends AppCompatActivity {
 
@@ -31,6 +36,7 @@ public class PlayingActivity extends AppCompatActivity {
     private int[] flag = new int[10];
     private Button[] button = new Button[10];
     private String id;
+    private String TAG = "debug";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +74,30 @@ public class PlayingActivity extends AppCompatActivity {
         id = intent.getStringExtra("uuid");
 
         numberPlayer2 = "8573";
+
+        // Write a message to the database
+        DatabaseReference myRef = FirebaseDatabase.getInstance().getReference();
+
+        myRef.child("users").child(id).setValue(numberPlayer1);
+        myRef.child("queue").child("2").child("uuid").setValue(id);
+        myRef.child("queue").child("2").child("number").setValue(numberPlayer1);
+
+        // Read from the database
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+                String value = (String) dataSnapshot.child("queue").child("2").child("uuid").getValue();
+                Log.d(TAG, "Value is: " + value);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w(TAG, "Failed to read value.", error.toException());
+            }
+        });
     }
 
     // 按下小鍵盤
