@@ -13,6 +13,7 @@ import android.widget.Toast;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -36,7 +37,11 @@ public class PlayingActivity extends AppCompatActivity {
     private int[] flag = new int[10];
     private Button[] button = new Button[10];
     private String id;
-    private String TAG = "debug";
+    private String TAG = "GuessNumberDebug";
+    private DatabaseReference myRef;
+    private String tempUuid, tempNumber, flagRoom;
+    private String roomId;
+    private boolean runOnce1 = true, runOnce2 = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,23 +78,47 @@ public class PlayingActivity extends AppCompatActivity {
         numberPlayer1 = intent.getStringExtra("guessNumberPlayer1");
         id = intent.getStringExtra("uuid");
 
-        numberPlayer2 = "8573";
+        //numberPlayer2 = "8573";
+
 
         // Write a message to the database
-        DatabaseReference myRef = FirebaseDatabase.getInstance().getReference();
+        myRef = FirebaseDatabase.getInstance().getReference();
 
-        myRef.child("users").child(id).setValue(numberPlayer1);
-        myRef.child("queue").child("2").child("uuid").setValue(id);
-        myRef.child("queue").child("2").child("number").setValue(numberPlayer1);
+        //myRef.child("users").child(id).setValue(numberPlayer1);
 
         // Read from the database
-        myRef.addValueEventListener(new ValueEventListener() {
+        myRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 // This method is called once with the initial value and again
                 // whenever data at this location is updated.
-                String value = (String) dataSnapshot.child("queue").child("2").child("uuid").getValue();
-                Log.d(TAG, "Value is: " + value);
+                String value = (String) dataSnapshot.child("queue").child("number").getValue();
+                numberPlayer2 = value;
+                Log.d(TAG, "Number is: " + value);
+
+                if(runOnce2) {
+                    // Enter queue
+                    if (value.equals("0")) {
+                        Log.w(TAG, "number == 0");
+                        myRef.child("queue").child("uuid").setValue(id);
+                        myRef.child("queue").child("number").setValue(numberPlayer1);
+
+
+                    } else {
+                        myRef.child("queue").child("uuid").setValue("0");
+                        myRef.child("queue").child("number").setValue("0");
+                        tempUuid = (String) dataSnapshot.child("queue").child("uuid").getValue();
+                        tempNumber = (String) dataSnapshot.child("queue").child("number").getValue();
+                        flagRoom = (String) dataSnapshot.child("room").child("flag").getValue();
+                        Log.w(TAG, "tempUuid:" + tempUuid + ", tempNumber:" + tempNumber + ", flagRoom:" + flagRoom);
+
+                        if (runOnce1) {
+                            buildRoom(id, guessNumberBoard, tempUuid, tempNumber, flagRoom);
+                        }
+                    }
+
+                    runOnce2 = false;
+                }
             }
 
             @Override
@@ -98,6 +127,14 @@ public class PlayingActivity extends AppCompatActivity {
                 Log.w(TAG, "Failed to read value.", error.toException());
             }
         });
+
+        // Delete
+        //myRef.child("queue").child("1").removeValue();
+        //myRef.child("queue").child("uuid").setValue("0");
+        //myRef.child("queue").child("number").setValue("0");
+
+        //Log.w(TAG, "buildRoom()" + id + ", " + numberPlayer1 + ", " + tempUuid + ", " + tempNumber + ", " + flagRoom);
+
     }
 
     // 按下小鍵盤
@@ -108,6 +145,8 @@ public class PlayingActivity extends AppCompatActivity {
                     guessNumberBoard += handleXAXB(Integer.parseInt(numberPlayer2), Integer.parseInt(guessNumberPlayer1));
 
                     initialFlagNumberColor();
+
+                    myRef.child("room").child(roomId).child("player1").child("board").setValue(guessNumberBoard);
                 } else {
                     Toast.makeText(PlayingActivity.this, "請輸入四位數字", Toast.LENGTH_SHORT).show();
                 }
@@ -238,7 +277,6 @@ public class PlayingActivity extends AppCompatActivity {
     }
 
     // initial flag and number's color
-
     private void initialFlagNumberColor() {
         for (int i = 0; i <= 9; i++) {
             flag[i] = 0;
@@ -250,5 +288,27 @@ public class PlayingActivity extends AppCompatActivity {
     // ReplaceLast, code by stackoverflow
     private String replaceLast(String text, String regex, String replacement) {
         return text.replaceFirst("(?s)(.*)" + regex, "$1" + replacement);
+    }
+
+    // Build room
+    private void buildRoom(String roomIdPlayer1, String roomNumberPlayer1, String roomIdPlayer2, String roomNumberPlayer2, String flagRoom) {
+
+        if(flagRoom==null) return;
+
+        if (Integer.parseInt(flagRoom) > 200) {
+            myRef.child("room").child("flag").setValue(0);
+        } else {
+            flagRoom = String.valueOf(Integer.parseInt(flagRoom) + 1);
+        }
+
+        roomId = flagRoom;
+        myRef.child("room").child("flag").setValue(flagRoom);
+
+        myRef.child("room").child(flagRoom).child("player1").child("number").setValue(roomNumberPlayer1);
+        myRef.child("room").child(flagRoom).child("player1").child("uuid").setValue(roomIdPlayer1);
+        myRef.child("room").child(flagRoom).child("player2").child("number").setValue(roomNumberPlayer2);
+        myRef.child("room").child(flagRoom).child("player2").child("uuid").setValue(roomIdPlayer2);
+
+        runOnce2 = false;
     }
 }
