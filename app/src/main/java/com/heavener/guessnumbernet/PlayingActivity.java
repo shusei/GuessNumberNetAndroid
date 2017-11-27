@@ -18,6 +18,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.MutableData;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 public class PlayingActivity extends AppCompatActivity {
@@ -29,7 +31,7 @@ public class PlayingActivity extends AppCompatActivity {
     //        button5, button6, button7, button8, button9;
     private TextView textViewPlayer1, textViewPlayer2;
     private String guessNumberPlayer1 = "";             // 按扭按出來的數字
-    private String guessNumberBoard = "";                    // Player1's Board
+    private String guessNumberBoard = "";               // Player1's Board
     private String numberPlayer1;                       // 使用者設定的數字
     private String numberPlayer2;                       // 對手設定的數字
     //private int flag[0] = 0, flag[1] = 0, flag[2] = 0, flag[3] = 0, flag[4] = 0,
@@ -41,7 +43,10 @@ public class PlayingActivity extends AppCompatActivity {
     private DatabaseReference myRef;
     private String tempUuid, tempNumber, flagRoom;
     private String roomId;
-    private boolean runOnce1 = true, runOnce2 = true;
+    private boolean runOnce1 = true, runOnce2 = true, isWaiting = false;
+
+    // Firebase's player1: queue
+    // Firebase's player2: build room
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,42 +94,84 @@ public class PlayingActivity extends AppCompatActivity {
         // Read from the database
         myRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(final DataSnapshot dataSnapshot) {
                 // This method is called once with the initial value and again
                 // whenever data at this location is updated.
-                String value = (String) dataSnapshot.child("queue").child("number").getValue();
-                numberPlayer2 = value;
-                Log.d(TAG, "Number is: " + value);
+                myRef.child("queue").child("number").runTransaction(new Transaction.Handler() {
+                    @Override
+                    public Transaction.Result doTransaction(MutableData mutableData) {
+                        numberPlayer2 = (String) mutableData.getValue();
+                        Log.d(TAG, "Number is: " + numberPlayer2);
 
-                if(runOnce2) {
-                    // Enter queue
-                    if (value.equals("0")) {
-                        Log.w(TAG, "number == 0");
-                        myRef.child("queue").child("uuid").setValue(id);
-                        myRef.child("queue").child("number").setValue(numberPlayer1);
+                        if (runOnce2) {
+                            // Enter queue
+                            if (mutableData.getValue().equals("0")) {
+                                Log.w(TAG, "number == 0");
+                                myRef.child("queue").child("uuid").setValue(id);
+                                myRef.child("queue").child("number").setValue(numberPlayer1);
+                                isWaiting = true;
+                            } else {
+                                tempUuid = (String) dataSnapshot.child("queue").child("uuid").getValue();
+                                tempNumber = (String) dataSnapshot.child("queue").child("number").getValue();
+                                flagRoom = (String) dataSnapshot.child("room").child("flag").getValue();
 
+                                myRef.child("queue").child("uuid").setValue("0");
+                                myRef.child("queue").child("number").setValue("0");
 
-                    } else {
-                        myRef.child("queue").child("uuid").setValue("0");
-                        myRef.child("queue").child("number").setValue("0");
-                        tempUuid = (String) dataSnapshot.child("queue").child("uuid").getValue();
-                        tempNumber = (String) dataSnapshot.child("queue").child("number").getValue();
-                        flagRoom = (String) dataSnapshot.child("room").child("flag").getValue();
-                        Log.w(TAG, "tempUuid:" + tempUuid + ", tempNumber:" + tempNumber + ", flagRoom:" + flagRoom);
+                                Log.w(TAG, "tempUuid:" + tempUuid + ", tempNumber:" + tempNumber + ", flagRoom:" + flagRoom);
 
-                        if (runOnce1) {
-                            buildRoom(id, guessNumberBoard, tempUuid, tempNumber, flagRoom);
+                                if (runOnce1) {
+                                    buildRoom(id, guessNumberBoard, tempUuid, tempNumber, flagRoom);
+                                }
+                            }
+
+                            runOnce2 = false;
                         }
+                        return null;
                     }
 
-                    runOnce2 = false;
-                }
+                    @Override
+                    public void onComplete(DatabaseError databaseError, boolean b, DataSnapshot dataSnapshot) {
+
+                    }
+                });
+
+
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
                 // Failed to read value
                 Log.w(TAG, "Failed to read value.", error.toException());
+            }
+        });
+
+        // player stay on queue, if room build then get roomId
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(final DataSnapshot dataSnapshot) {
+                if (isWaiting) {
+                    myRef.child("queue").child("number").runTransaction(new Transaction.Handler() {
+                        @Override
+                        public Transaction.Result doTransaction(MutableData mutableData) {
+                            if (mutableData.getValue().equals("0")) {
+                                roomId = (String) dataSnapshot.child("room").child("flag").getValue();
+                                Log.w(TAG, "Exit queue enter room: " + roomId + ", value: " + mutableData.getValue());
+                            } else {
+                                Log.w(TAG, "value: " + mutableData.getValue());
+                            }
+                            return null;
+                        }
+
+                        @Override
+                        public void onComplete(DatabaseError databaseError, boolean b, DataSnapshot dataSnapshot) {
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
             }
         });
 
@@ -293,7 +340,7 @@ public class PlayingActivity extends AppCompatActivity {
     // Build room
     private void buildRoom(String roomIdPlayer1, String roomNumberPlayer1, String roomIdPlayer2, String roomNumberPlayer2, String flagRoom) {
 
-        if(flagRoom==null) return;
+        if (flagRoom == null) return;
 
         if (Integer.parseInt(flagRoom) > 200) {
             myRef.child("room").child("flag").setValue(0);
