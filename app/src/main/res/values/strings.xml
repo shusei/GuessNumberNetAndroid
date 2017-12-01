@@ -6,4 +6,6 @@
     <string name="imageViewPlayer1">Player1</string>
     <string name="imageViewPlayer2">Player2</string>
     <string name="textViewIDhint">請輸入四位數</string>
+    <string name="progressDialogTitle">搜尋對手</string>
+    <string name="progressDialogMessage">請稍候。。。</string>
 </resources>

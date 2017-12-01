@@ -1,5 +1,6 @@
 package com.heavener.guessnumbernet;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
@@ -27,15 +28,11 @@ public class PlayingActivity extends AppCompatActivity {
     private AdView mAdView;
 
     private Button buttonOK, buttonX;
-    //private Button button0, button1, button2, button3, button4,
-    //        button5, button6, button7, button8, button9;
     private TextView textViewPlayer1, textViewPlayer2;
     private String guessNumberPlayer1 = "";             // 按扭按出來的數字
     private String guessNumberBoard = "";               // Player1's Board
     private String numberPlayer1;                       // 使用者設定的數字
     private String numberPlayer2;                       // 對手設定的數字
-    //private int flag[0] = 0, flag[1] = 0, flag[2] = 0, flag[3] = 0, flag[4] = 0,
-    //        flag[5] = 0, flag[6] = 0, flag[7] = 0, flag[8] = 0, flag[9] = 0;
     private int[] flag = new int[10];
     private Button[] button = new Button[10];
     private String id;
@@ -43,7 +40,10 @@ public class PlayingActivity extends AppCompatActivity {
     private DatabaseReference myRef;
     private String tempUuid, tempNumber, flagRoom;
     private String roomId;
-    private boolean runOnce1 = true, runOnce2 = true, isWaiting = false;
+    private boolean runOnce1 = true, runOnce2 = true, runOnce3 = true;
+    private boolean isWaiting = false;
+    private ProgressDialog progressDialog;
+    private String player = "";                           // is player1 or player2
 
     // Firebase's player1: queue
     // Firebase's player2: build room
@@ -89,8 +89,6 @@ public class PlayingActivity extends AppCompatActivity {
         // Write a message to the database
         myRef = FirebaseDatabase.getInstance().getReference();
 
-        //myRef.child("users").child(id).setValue(numberPlayer1);
-
         // Read from the database
         myRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -100,17 +98,18 @@ public class PlayingActivity extends AppCompatActivity {
                 myRef.child("queue").child("number").runTransaction(new Transaction.Handler() {
                     @Override
                     public Transaction.Result doTransaction(MutableData mutableData) {
-                        numberPlayer2 = (String) mutableData.getValue();
-                        Log.d(TAG, "Number is: " + numberPlayer2);
+                        //numberPlayer2 = (String) mutableData.getValue();
+                        //Log.d(TAG, "Number is: " + numberPlayer2);
 
                         if (runOnce2) {
                             // Enter queue
                             if (mutableData.getValue().equals("0")) {
-                                Log.w(TAG, "number == 0");
+                                Log.w(TAG, "Enter queue");
                                 myRef.child("queue").child("uuid").setValue(id);
                                 myRef.child("queue").child("number").setValue(numberPlayer1);
                                 isWaiting = true;
                             } else {
+                                isWaiting = false;
                                 tempUuid = (String) dataSnapshot.child("queue").child("uuid").getValue();
                                 tempNumber = (String) dataSnapshot.child("queue").child("number").getValue();
                                 flagRoom = (String) dataSnapshot.child("room").child("flag").getValue();
@@ -121,7 +120,8 @@ public class PlayingActivity extends AppCompatActivity {
                                 Log.w(TAG, "tempUuid:" + tempUuid + ", tempNumber:" + tempNumber + ", flagRoom:" + flagRoom);
 
                                 if (runOnce1) {
-                                    buildRoom(id, guessNumberBoard, tempUuid, tempNumber, flagRoom);
+                                    player = "iAmPlayer2";
+                                    buildRoom(tempUuid, tempNumber, guessNumberBoard, id, numberPlayer1, flagRoom);
                                 }
                             }
 
@@ -132,11 +132,8 @@ public class PlayingActivity extends AppCompatActivity {
 
                     @Override
                     public void onComplete(DatabaseError databaseError, boolean b, DataSnapshot dataSnapshot) {
-
                     }
                 });
-
-
             }
 
             @Override
@@ -146,17 +143,29 @@ public class PlayingActivity extends AppCompatActivity {
             }
         });
 
+        Log.w(TAG, "isWaiting=" + isWaiting);
+
         // player stay on queue, if room build then get roomId
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(final DataSnapshot dataSnapshot) {
                 if (isWaiting) {
+
+                    if (runOnce3) {
+                        progressDialog = ProgressDialog.show(PlayingActivity.this, getResources().getString(R.string.progressDialogTitle), getResources().getString(R.string.progressDialogMessage));
+                        runOnce3 = false;
+                    }
+
                     myRef.child("queue").child("number").runTransaction(new Transaction.Handler() {
                         @Override
                         public Transaction.Result doTransaction(MutableData mutableData) {
                             if (mutableData.getValue().equals("0")) {
+                                player = "iAmPlayer1";
+                                isWaiting = false;
+                                progressDialog.dismiss();
                                 roomId = (String) dataSnapshot.child("room").child("flag").getValue();
-                                Log.w(TAG, "Exit queue enter room: " + roomId + ", value: " + mutableData.getValue());
+                                numberPlayer2 = (String) dataSnapshot.child("room").child(roomId).child("player2").child("number").getValue();
+                                Log.w(TAG, "Exit queue enter room: " + roomId + ", numberPlayer2: " + numberPlayer2);
                             } else {
                                 Log.w(TAG, "value: " + mutableData.getValue());
                             }
@@ -175,12 +184,6 @@ public class PlayingActivity extends AppCompatActivity {
             }
         });
 
-        // Delete
-        //myRef.child("queue").child("1").removeValue();
-        //myRef.child("queue").child("uuid").setValue("0");
-        //myRef.child("queue").child("number").setValue("0");
-
-        //Log.w(TAG, "buildRoom()" + id + ", " + numberPlayer1 + ", " + tempUuid + ", " + tempNumber + ", " + flagRoom);
 
     }
 
@@ -188,12 +191,18 @@ public class PlayingActivity extends AppCompatActivity {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.buttonOK:
+                Log.w(TAG, "numberPlayer2=" + numberPlayer2 + " guessNumberPlayer1=" + guessNumberPlayer1);
                 if (guessNumberPlayer1.length() == 4) {
                     guessNumberBoard += handleXAXB(Integer.parseInt(numberPlayer2), Integer.parseInt(guessNumberPlayer1));
 
                     initialFlagNumberColor();
 
-                    myRef.child("room").child(roomId).child("player1").child("board").setValue(guessNumberBoard);
+                    Log.w(TAG, "player=" + player);
+                    if (player.equals("iAmPlayer1")) {
+                        myRef.child("room").child(roomId).child("player1").child("board").setValue(guessNumberBoard);
+                    } else {
+                        myRef.child("room").child(roomId).child("player2").child("board").setValue(guessNumberBoard);
+                    }
                 } else {
                     Toast.makeText(PlayingActivity.this, "請輸入四位數字", Toast.LENGTH_SHORT).show();
                 }
@@ -239,6 +248,18 @@ public class PlayingActivity extends AppCompatActivity {
         }
 
         textViewPlayer1.setText(guessNumberBoard);
+        Log.w(TAG, "roomId"+roomId);
+        myRef.child("room").child(roomId).child("player2").child("board").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                textViewPlayer2.setText((String) dataSnapshot.getValue());
+                //Log.w(TAG, "(String) dataSnapshot.getValue()" + (String) dataSnapshot.getValue());
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        });
 
     }
 
@@ -338,7 +359,7 @@ public class PlayingActivity extends AppCompatActivity {
     }
 
     // Build room
-    private void buildRoom(String roomIdPlayer1, String roomNumberPlayer1, String roomIdPlayer2, String roomNumberPlayer2, String flagRoom) {
+    private void buildRoom(String roomIdPlayer1, String roomNumberPlayer1, String roomBoardPlayer1, String roomIdPlayer2, String roomNumberPlayer2, String flagRoom) {
 
         if (flagRoom == null) return;
 
@@ -352,10 +373,14 @@ public class PlayingActivity extends AppCompatActivity {
         myRef.child("room").child("flag").setValue(flagRoom);
 
         myRef.child("room").child(flagRoom).child("player1").child("number").setValue(roomNumberPlayer1);
+        myRef.child("room").child(flagRoom).child("player1").child("board").setValue(roomBoardPlayer1);
         myRef.child("room").child(flagRoom).child("player1").child("uuid").setValue(roomIdPlayer1);
         myRef.child("room").child(flagRoom).child("player2").child("number").setValue(roomNumberPlayer2);
         myRef.child("room").child(flagRoom).child("player2").child("uuid").setValue(roomIdPlayer2);
 
         runOnce2 = false;
+
+        Log.w(TAG, "numberPlayer2=" + numberPlayer2);
+        numberPlayer2 = roomNumberPlayer1;
     }
 }
