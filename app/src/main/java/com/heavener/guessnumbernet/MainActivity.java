@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
                     intent.putExtra("guessNumberPlayer1", guessNumberPlayer1);
                     intent.putExtra("uuid", id);
                     startActivity(intent);
+                    MainActivity.this.finish();
                 }else{
                     Toast.makeText(MainActivity.this, "請輸入四位數字", Toast.LENGTH_SHORT).show();
                 }
