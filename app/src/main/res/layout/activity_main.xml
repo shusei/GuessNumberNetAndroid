@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/black"
     tools:context="com.heavener.guessnumbernet.MainActivity">
 
     <TextView
@@ -16,6 +17,7 @@
         android:layout_marginTop="32dp"
         android:text="@string/textViewTitle"
         android:textAlignment="center"
+        android:textColor="@android:color/background_light"
         android:textSize="90sp"
         app:layout_constraintBottom_toTopOf="@+id/textViewID"
         app:layout_constraintEnd_toEndOf="parent"
@@ -32,28 +34,29 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="90dp"
         android:text="@string/textViewLabel"
+        android:textColor="@android:color/background_light"
         android:textSize="18sp"
         app:layout_constraintBottom_toTopOf="@+id/tableLayout"
         app:layout_constraintEnd_toStartOf="@+id/textViewID"
         app:layout_constraintHorizontal_chainStyle="spread_inside"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewTitle"
-        android:layout_marginLeft="16dp" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewTitle" />
 
     <TextView
         android:id="@+id/textViewID"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
+        android:background="@android:color/background_light"
         android:ems="10"
-        android:inputType="none"
-        android:textSize="24sp"
         android:hint="@string/textViewIDhint"
+        android:inputType="none"
+        android:textColorHint="@android:color/darker_gray"
+        android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="@+id/textViewLabel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/textViewLabel"
-        app:layout_constraintTop_toTopOf="@+id/textViewLabel"
-        android:layout_marginRight="16dp" />
+        app:layout_constraintTop_toTopOf="@+id/textViewLabel" />
 
     <TableLayout
         android:id="@+id/tableLayout"
